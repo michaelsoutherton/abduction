@@ -867,6 +867,7 @@
 				null, notices.PRIORITY_INFO_HIGH, [
 					{
 						label:		label.save,
+                        accessKey:  label.accesskey,
 						callback:	action_save
 					}
 				]

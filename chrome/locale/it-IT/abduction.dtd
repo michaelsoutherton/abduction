@@ -1,3 +1,4 @@
-<!ENTITY abduction.notice	"Salva immagine di:">
-<!ENTITY abduction.save		"Salva selezione...">
-<!ENTITY abduction.menu		"Salva pagina come immagine...">
+<!ENTITY abduction.notice	 "Salva immagine di:">
+<!ENTITY abduction.save		 "Salva selezione…">
+<!ENTITY abduction.accesskey "S">
+<!ENTITY abduction.menu		 "Salva pagina come immagine…">

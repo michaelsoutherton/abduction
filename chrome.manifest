@@ -2,4 +2,6 @@ content abduction chrome/content/
 locale abduction en-US chrome/locale/en-US/
 locale abduction en-AU chrome/locale/en-AU/
 locale abduction it-IT chrome/locale/it-IT/
+locale abduction ru chrome/locale/ru/
+locale abduction uk chrome/locale/uk/
 overlay chrome://browser/content/browser.xul chrome://abduction/content/browser.xul

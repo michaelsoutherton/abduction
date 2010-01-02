@@ -23,6 +23,20 @@
 				<em:description>Permette di salvare come immagine una pagina web o una sua porzione.</em:description>
 			</Description>
 		</em:localized>
+		<em:localized>
+			<Description>
+				<em:locale>ru</em:locale>
+				<em:name>Abduction!</em:name>
+				<em:description>Позволяет вам сохранять выбранные части веб-страниц как изображения.</em:description>
+			</Description>
+		</em:localized>
+		<em:localized>
+			<Description>
+				<em:locale>uk</em:locale>
+				<em:name>Abduction!</em:name>
+				<em:description>Дозволяє вам зберігати вибрані частини веб-сторінок як зображення.</em:description>
+			</Description>
+		</em:localized>
 		
 		<em:name>Abduction!</em:name>
 		<em:version>3.0.4</em:version>		
@@ -32,6 +46,7 @@
 		<em:iconURL>chrome://abduction/content/icon.png</em:iconURL>
 		<em:type>2</em:type>
 		<em:translator>Stefano Tintorini</em:translator>
+		<em:translator>Tim Babych</em:translator>
 		
 		<!-- Firefox -->
 		<em:targetApplication>

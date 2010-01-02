@@ -12,8 +12,9 @@
 			label="&abduction.menu;"
 			oncommand="
 				abduction(document.popupNode, {
-					notice:	'&abduction.notice;',
-					save:	'&abduction.save;'
+					notice:	   '&abduction.notice;',
+					save:	   '&abduction.save;',
+                    accesskey: '&abduction.accesskey;'
 				});
 			"
 		/>
@@ -27,8 +28,9 @@
 			label="&abduction.menu;"
 			oncommand="
 				abduction(document.popupNode, {
-					notice:	'&abduction.notice;',
-					save:	'&abduction.save;'
+					notice:	   '&abduction.notice;',
+					save:	   '&abduction.save;',
+                    accesskey: '&abduction.accesskey;'
 				});
 			"
 		/>
