@@ -809,7 +809,7 @@ var abduction = function(target, label) {
 	event_connect(widget.selection_left, 'mousedown', action_left);
 	event_connect(widget.selection_right, 'mousedown', action_right);
 	
-/*-------------------------------------------------------------------------------------------*/
+	/*-------------------------------------------------------------------------------------------*/
 
 	var capture = function() {
 		var canvas = document.createElementNS('http://www.w3.org/1999/xhtml', 'html:canvas');
@@ -839,6 +839,7 @@ var abduction = function(target, label) {
 	var action_close = function(event) {
 		event_release(notice, 'command', action_close);
 		event_release(widget.window, 'unload', action_close);
+		event_release(widget.window, 'keydown', action_keydown);
 		
 		widget.root.removeChild(styles);
 		widget.root.removeChild(widget.overlay);
@@ -865,7 +866,6 @@ var abduction = function(target, label) {
 			null, notices.PRIORITY_INFO_HIGH, [
 				{
 					label:		label.save,
-					accessKey:  label.accesskey,
 					callback:	action_save
 				}
 			]
