@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
 	<Description about="urn:mozilla:install-manifest">
 		<em:id>{b0e1b4a6-2c6f-4e99-94f2-8e625d7ae255}</em:id>
@@ -39,10 +39,13 @@
 		</em:localized>
 		
 		<em:name>Abduction!</em:name>
-		<em:version>3.0.6</em:version>		
+		<em:version>3.0.7</em:version>		
 		<em:description>Lets you capture an image of a web page, select the part you want and save it.</em:description>
-		<em:creator>Rowan Lewis / Chris Dzombak</em:creator>
-		<em:homepageURL>http://code.chrisdzombak.net/abduction</em:homepageURL>
+		<em:creator>Rowan Lewis</em:creator>
+		<em:contributor>Chris Dzombak</em:contributor>
+		<em:contributor>Tim Babych</em:contributor>
+		<em:contributor>Jonathan Tran</em:contributor>
+		<em:homepageURL>http://github.com/rowan-lewis/abduction</em:homepageURL>
 		<em:iconURL>chrome://abduction/content/icon.png</em:iconURL>
 		<em:type>2</em:type>
 		<em:translator>Stefano Tintorini</em:translator>
@@ -53,7 +56,7 @@
 			<Description>
 				<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
 				<em:minVersion>3.5</em:minVersion>
-				<em:maxVersion>4.0</em:maxVersion>
+				<em:maxVersion>4.0b8pre</em:maxVersion>
 			</Description>
 		</em:targetApplication>
 	</Description>      
