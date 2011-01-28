@@ -1,4 +1,5 @@
-<!ENTITY abduction.notice	 "Сохранить изображением:">
-<!ENTITY abduction.save		 "Сохранить выбранное…">
-<!ENTITY abduction.accesskey "С">
-<!ENTITY abduction.menu		 "Сохранить страницу как изображение…">
+<!ENTITY abduction.notice		"Сохранить изображением:">
+<!ENTITY abduction.save			"Сохранить выбранное…">
+<!ENTITY abduction.selectall	"Select all">
+<!ENTITY abduction.accesskey	"С">
+<!ENTITY abduction.menu			"Сохранить страницу как изображение…">

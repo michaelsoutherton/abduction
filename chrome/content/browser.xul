@@ -12,9 +12,10 @@
 			label="&abduction.menu;"
 			oncommand="
 				abduction(document.popupNode, {
-					notice:	   '&abduction.notice;',
-					save:	   '&abduction.save;',
-                    accesskey: '&abduction.accesskey;'
+					notice:		'&abduction.notice;',
+					save:		'&abduction.save;',
+					selectall:	'&abduction.selectall;',
+                    accesskey:	'&abduction.accesskey;'
 				});
 			"
 		/>
@@ -28,9 +29,10 @@
 			label="&abduction.menu;"
 			oncommand="
 				abduction(document.popupNode, {
-					notice:	   '&abduction.notice;',
-					save:	   '&abduction.save;',
-                    accesskey: '&abduction.accesskey;'
+					notice:		'&abduction.notice;',
+					save:		'&abduction.save;',
+					selectall:	'&abduction.selectall;',
+                    accesskey:	'&abduction.accesskey;'
 				});
 			"
 		/>
