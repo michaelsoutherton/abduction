@@ -1,4 +1,5 @@
 content abduction chrome/content/
+resource abduction chrome/content/
 locale abduction en-US chrome/locale/en-US/
 locale abduction en-AU chrome/locale/en-AU/
 locale abduction it-IT chrome/locale/it-IT/

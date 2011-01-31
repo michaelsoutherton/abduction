@@ -1,4 +1,5 @@
-<!ENTITY abduction.notice	 "Зберегти зображенням:">
-<!ENTITY abduction.save		 "Зберегти вибране…">
-<!ENTITY abduction.accesskey "З">
-<!ENTITY abduction.menu		 "Зберегти сторінку як зображення…">
+<!ENTITY abduction.notice		"Зберегти зображенням:">
+<!ENTITY abduction.save			"Зберегти вибране…">
+<!ENTITY abduction.selectall	"Select all">
+<!ENTITY abduction.accesskey	"З">
+<!ENTITY abduction.menu			"Зберегти сторінку як зображення…">

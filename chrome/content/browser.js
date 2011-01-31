@@ -29,9 +29,12 @@ var abduction = function(target, label) {
 		if (element.offsetParent) {
 			do {
 				result.left += element.offsetLeft;
-				result.top += element.offsetTop;				
-			} while (element == element.offsetParent);
+				result.top += element.offsetTop;
+			}
+			
+			while (element == element.offsetParent);
 		}
+		
 		return result;
 	};
 	
@@ -466,7 +469,6 @@ var abduction = function(target, label) {
 		event_connect(widget.document, 'mouseleave', stop);
 		event_stop(event);
 	};
-	
 	// Resize left:
 	var action_left = function(event) {
 		var stop = function() {
@@ -594,7 +596,6 @@ var abduction = function(target, label) {
 	
 	// Define widgets:
 	widget.document = window.top.getBrowser().selectedBrowser.contentWindow.document;
-	//widget.document = document;
 	widget.window = widget.document.defaultView;
 	widget.root = widget.document.documentElement;
 	widget.overlay = widget.document.createElement('abduction-overlay');
@@ -609,152 +610,9 @@ var abduction = function(target, label) {
 	widget.selection_left = widget.document.createElement('abduction-selection-left');
 	widget.selection_right = widget.document.createElement('abduction-selection-right');
 	
-	var styles = widget.document.createElement('style');
-	styles.setAttribute('type', 'text/css');
-	styles.appendChild(widget.document.createTextNode('\
-		abduction-overlay {\
-			background: hsla(0, 0%, 0%, 0.3);\
-			cursor: crosshair;\
-			height: 100%;\
-			left: 0;\
-			position: fixed;\
-			top: 0;\
-			width: 100%;\
-			z-index: 1000002;\
-		}\
-		abduction-selection,\
-		abduction-selection * {\
-			-moz-box-sizing: border-box;\
-			display: block;\
-		}\
-		abduction-selection {\
-			background: hsla(80, 100%, 50%, 0.3);\
-			border: 1px solid hsla(80, 100%, 20%, 0.7);\
-			overflow: hidden;\
-			position: absolute;\
-			z-index: 1000003;\
-		}\
-		abduction-selection-inner {\
-			border: 1px solid hsla(80, 100%, 80%, 0.5);\
-			cursor: move;\
-			height: 100%;\
-			overflow: hidden;\
-			width: 100%;\
-		}\
-		abduction-selection-top {\
-			border-bottom: 1px dashed hsla(80, 100%, 80%, 0.5);\
-			cursor: n-resize;\
-			height: 8px;\
-			left: 8px;\
-			position: absolute;\
-			right: 8px;\
-			top: 0;\
-		}\
-		abduction-selection-top-left {\
-			cursor: nw-resize;\
-			height: 8px;\
-			left: 0;\
-			position: absolute;\
-			top: 0;\
-			width: 8px;\
-		}\
-		abduction-selection-top-right {\
-			cursor: ne-resize;\
-			height: 8px;\
-			position: absolute;\
-			right: 0;\
-			top: 0;\
-			width: 8px;\
-		}\
-		abduction-selection-bottom {\
-			border-top: 1px dashed hsla(80, 100%, 80%, 0.5);\
-			bottom: 0;\
-			cursor: s-resize;\
-			height: 8px;\
-			left: 8px;\
-			position: absolute;\
-			right: 8px;\
-		}\
-		abduction-selection-bottom-left {\
-			bottom: 0;\
-			cursor: sw-resize;\
-			height: 8px;\
-			left: 0;\
-			position: absolute;\
-			width: 8px;\
-		}\
-		abduction-selection-bottom-right {\
-			bottom: 0;\
-			cursor: se-resize;\
-			height: 8px;\
-			position: absolute;\
-			right: 0;\
-			width: 8px;\
-		}\
-		abduction-selection-left {\
-			border-right: 1px dashed hsla(80, 100%, 80%, 0.5);\
-			bottom: 8px;\
-			cursor: w-resize;\
-			left: 0;\
-			position: absolute;\
-			top: 8px;\
-			width: 8px;\
-		}\
-		abduction-selection-right {\
-			border-left: 1px dashed hsla(80, 100%, 80%, 0.5);\
-			bottom: 8px;\
-			cursor: e-resize;\
-			position: absolute;\
-			right: 0;\
-			top: 8px;\
-			width: 8px;\
-		}\
-		abduction-overlay[state = "selecting"],\
-		abduction-selection[state = "selecting"],\
-		abduction-selection[state = "selecting"] * {\
-			cursor: crosshair;\
-		}\
-		abduction-overlay[state = "resize-top"],\
-		abduction-selection[state = "resize-top"],\
-		abduction-selection[state = "resize-top"] * {\
-			cursor: n-resize;\
-		}\
-		abduction-overlay[state = "resize-top-left"],\
-		abduction-selection[state = "resize-top-left"],\
-		abduction-selection[state = "resize-top-left"] * {\
-			cursor: nw-resize;\
-		}\
-		abduction-overlay[state = "resize-top-right"],\
-		abduction-selection[state = "resize-top-right"],\
-		abduction-selection[state = "resize-top-right"] * {\
-			cursor: ne-resize;\
-		}\
-		abduction-overlay[state = "resize-bottom"],\
-		abduction-selection[state = "resize-bottom"],\
-		abduction-selection[state = "resize-bottom"] * {\
-			cursor: s-resize;\
-		}\
-		abduction-overlay[state = "resize-bottom-left"],\
-		abduction-selection[state = "resize-bottom-left"],\
-		abduction-selection[state = "resize-bottom-left"] * {\
-			cursor: sw-resize;\
-		}\
-		abduction-overlay[state = "resize-bottom-right"],\
-		abduction-selection[state = "resize-bottom-right"],\
-		abduction-selection[state = "resize-bottom-right"] * {\
-			cursor: se-resize;\
-		}\
-		abduction-overlay[state = "resize-left"],\
-		abduction-selection[state = "resize-left"],\
-		abduction-selection[state = "resize-left"] * {\
-			cursor: w-resize;\
-		}\
-		abduction-overlay[state = "resize-right"],\
-		abduction-selection[state = "resize-right"],\
-		abduction-selection[state = "resize-right"] * {\
-			cursor: e-resize;\
-		}\
-	'));
+	var styles = widget.document.createElement('link');
+	styles.setAttribute('rel', 'stylesheet');
+	styles.setAttribute('href', 'resource://abduction/browser.css');
 	widget.root.appendChild(styles);
 	widget.root.appendChild(widget.overlay);
 	
@@ -865,9 +723,19 @@ var abduction = function(target, label) {
 			label.notice + ' ' + filename, 'abduction-controls',
 			null, notices.PRIORITY_INFO_HIGH, [
 				{
+					label:		label.selectall,
+					callback:	function() {
+						notice_allow_close = false;
+						action_maximize();
+					}
+				},
+				{
 					label:		label.save,
-					accessKey:      label.accesskey,
-					callback:	action_save
+					accessKey:	label.accesskey,
+					callback:	function() {
+						notice_allow_close = false;
+						action_save();
+					}
 				}
 			]
 		);
@@ -876,8 +744,13 @@ var abduction = function(target, label) {
 	var notices = window.getNotificationBox(widget.window);
 	var filename = (widget.document.title ? widget.document.title : widget.document.URL);
 	var notice = append_notice();
+	var notice_allow_close = true;
 	
-	event_connect(notice, 'command', action_close);
+	event_connect(notice, 'command', function() {
+		if (notice_allow_close) action_close();
+		
+		notice_allow_close = true;
+	});
 	event_connect(widget.window, 'unload', action_close);
 	event_connect(widget.window, 'keydown', action_keydown);
 };
