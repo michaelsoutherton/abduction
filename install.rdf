@@ -25,6 +25,13 @@
 		</em:localized>
 		<em:localized>
 			<Description>
+				<em:locale>pl-PL</em:locale>
+				<em:name>Abduction!</em:name>
+				<em:description>Umożliwia przechwycenie obrazu ze strony internetowej, zaznaczenie wybranego fragmentu i zapisanie go.</em:description>
+			</Description>
+		</em:localized>
+		<em:localized>
+			<Description>
 				<em:locale>ru</em:locale>
 				<em:name>Abduction!</em:name>
 				<em:description>Позволяет вам сохранять выбранные части веб-страниц как изображения.</em:description>
@@ -50,6 +57,7 @@
 		<em:contributor>Jonathan Tran</em:contributor>
 		<em:translator>Stefano Tintorini</em:translator>
 		<em:translator>Tim Babych</em:translator>
+		<em:translator>Mr Dark</em:translator>
 		
 		<!-- Firefox -->
 		<em:targetApplication>
