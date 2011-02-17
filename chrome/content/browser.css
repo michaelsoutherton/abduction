@@ -1,5 +1,5 @@
 abduction-overlay {
-	background: hsla(0, 0%, 0%, 0.3);
+	background: hsla(0, 0%, 20%, 0.4);
 	cursor: crosshair;
 	height: 100%;
 	left: 0;
@@ -14,21 +14,21 @@ abduction-selection * {
 	display: block;
 }
 abduction-selection {
-	background: hsla(80, 100%, 50%, 0.3);
-	border: 1px solid hsla(80, 100%, 20%, 0.7);
+	background: hsla(212, 100%, 70%, 0.4);
+	-moz-box-shadow: 0 0 10px hsla(0, 0%, 0%, 0.2);
 	overflow: hidden;
 	position: absolute;
 	z-index: 1000003;
 }
 abduction-selection-inner {
-	border: 1px solid hsla(80, 100%, 80%, 0.5);
+	border: 1px solid hsla(0, 0%, 100%, 0.3);
 	cursor: move;
 	height: 100%;
 	overflow: hidden;
 	width: 100%;
 }
 abduction-selection-top {
-	border-bottom: 1px dashed hsla(80, 100%, 80%, 0.5);
+	border-bottom: 1px dashed hsla(0, 0%, 100%, 0.3);
 	cursor: n-resize;
 	height: 8px;
 	left: 8px;
@@ -53,7 +53,7 @@ abduction-selection-top-right {
 	width: 8px;
 }
 abduction-selection-bottom {
-	border-top: 1px dashed hsla(80, 100%, 80%, 0.5);
+	border-top: 1px dashed hsla(0, 0%, 100%, 0.3);
 	bottom: 0;
 	cursor: s-resize;
 	height: 8px;
@@ -78,7 +78,7 @@ abduction-selection-bottom-right {
 	width: 8px;
 }
 abduction-selection-left {
-	border-right: 1px dashed hsla(80, 100%, 80%, 0.5);
+	border-right: 1px dashed hsla(0, 0%, 100%, 0.3);
 	bottom: 8px;
 	cursor: w-resize;
 	left: 0;
@@ -87,7 +87,7 @@ abduction-selection-left {
 	width: 8px;
 }
 abduction-selection-right {
-	border-left: 1px dashed hsla(80, 100%, 80%, 0.5);
+	border-left: 1px dashed hsla(0, 0%, 100%, 0.3);
 	bottom: 8px;
 	cursor: e-resize;
 	position: absolute;
