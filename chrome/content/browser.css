@@ -8,6 +8,9 @@ abduction-overlay {
 	width: 100%;
 	z-index: 1000002;
 }
+abduction-overlay.x-ray {
+	cursor: default;
+}
 abduction-selection,
 abduction-selection * {
 	-moz-box-sizing: border-box;
@@ -15,17 +18,23 @@ abduction-selection * {
 }
 abduction-selection {
 	background: hsla(212, 100%, 70%, 0.4);
+	border: 1px solid hsla(0, 0%, 100%, 0.3);
 	-moz-box-shadow: 0 0 10px hsla(0, 0%, 0%, 0.2);
 	overflow: hidden;
 	position: absolute;
 	z-index: 1000003;
 }
+abduction-selection.x-ray {
+	background: hsla(70, 100%, 70%, 0.4);
+}
 abduction-selection-inner {
-	border: 1px solid hsla(0, 0%, 100%, 0.3);
 	cursor: move;
 	height: 100%;
 	overflow: hidden;
 	width: 100%;
+}
+abduction-selection.x-ray abduction-selection-inner {
+	display: none;
 }
 abduction-selection-top {
 	border-bottom: 1px dashed hsla(0, 0%, 100%, 0.3);

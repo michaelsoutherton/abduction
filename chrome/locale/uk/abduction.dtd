@@ -1,5 +1,6 @@
 <!ENTITY abduction.notice		"Зберегти зображенням:">
 <!ENTITY abduction.save			"Зберегти вибране…">
 <!ENTITY abduction.selectall	"Select all">
+<!ENTITY abduction.autoselect	"X-Ray">
 <!ENTITY abduction.accesskey	"З">
 <!ENTITY abduction.menu			"Зберегти сторінку як зображення…">

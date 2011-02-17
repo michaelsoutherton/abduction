@@ -12,6 +12,7 @@ var abduction = function(target, label) {
 		body:				null,
 		overlay:			null,
 		selection:			null,
+		selection_inner:	null,
 		selection_top:		null,
 		selection_bottom:	null,
 		selection_left:		null,
@@ -20,19 +21,18 @@ var abduction = function(target, label) {
 	
 	var get_position = function(element) {
 		var result = {
-			left:	0,
-			top:	0,
-			height:	element.offsetHeight,
-			width:	element.offsetWidth
+			top:	element.offsetTop,
+			left:	element.offsetLeft,
+			width:	element.offsetWidth,
+			height:	element.offsetHeight
 		};
+		var parent = element.offsetParent;
 		
-		if (element.offsetParent) {
-			do {
-				result.left += element.offsetLeft;
-				result.top += element.offsetTop;
-			}
+		while (parent != null) {
+			result.left += parent.offsetLeft;
+			result.top += parent.offsetTop;
 			
-			while (element == element.offsetParent);
+			parent = parent.offsetParent;
 		}
 		
 		return result;
@@ -86,6 +86,58 @@ var abduction = function(target, label) {
 		}
 		
 		event.stopPropagation();
+	};
+	
+	var position_selection = function(position) {
+		if (position.height < setting.min_height) {
+			position.height = setting.min_height;
+		}
+		
+		if (position.width < setting.min_width) {
+			position.width = setting.min_width;
+		}
+		
+		widget.selection.style.height = position.height + 'px';
+		widget.selection.style.left = position.left + 'px';
+		widget.selection.style.top = position.top + 'px';
+		widget.selection.style.width = position.width + 'px';
+	};
+	
+	var action_auto = function(event) {
+		var stop = function() {
+			widget.selection.className = null;
+			widget.overlay.className = null;
+			
+			event_release(widget.selection, 'mousemove', move);
+			event_release(widget.selection, 'mousedown', stop);
+			event_release(widget.overlay, 'mousemove', move);
+			event_release(widget.overlay, 'mousedown', stop);
+		};
+		var move = function(event) {
+			widget.overlay.style.zIndex = -10000002;
+			widget.selection.style.zIndex = -10000003;
+			
+			widget.selection.style.height = 0;
+			widget.selection.style.left = 0;
+			widget.selection.style.top = 0;
+			widget.selection.style.width = 0;
+			
+			var element = widget.document.elementFromPoint(event.clientX, event.clientY);
+			
+			position_selection(get_position(element));
+			
+			widget.overlay.style.zIndex = 10000002;
+			widget.selection.style.zIndex = 10000003;
+		};
+		
+		widget.selection.className = 'x-ray';
+		widget.overlay.className = 'x-ray';
+		
+		event_connect(widget.selection, 'mousemove', move);
+		event_connect(widget.selection, 'mousedown', stop);
+		event_connect(widget.overlay, 'mousemove', move);
+		event_connect(widget.overlay, 'mousedown', stop);
+		event_stop(event);
 	};
 	
 	var action_move = function(event) {
@@ -722,6 +774,13 @@ var abduction = function(target, label) {
 		return notices.appendNotification(
 			label.notice + ' ' + filename, 'abduction-controls',
 			null, notices.PRIORITY_INFO_HIGH, [
+				{
+					label:		label.autoselect,
+					callback:	function() {
+						notice_allow_close = false;
+						action_auto();
+					}
+				},
 				{
 					label:		label.selectall,
 					callback:	function() {

@@ -1,5 +1,6 @@
 <!ENTITY abduction.notice		"Zapisz obraz jako:">
 <!ENTITY abduction.save			"Zapisz zaznaczone…">
 <!ENTITY abduction.selectall	"Zaznacz wszystko">
+<!ENTITY abduction.autoselect	"X-Ray">
 <!ENTITY abduction.accesskey	"S">
 <!ENTITY abduction.menu			"Zapisz stronę jako obraz…">
