@@ -469,7 +469,6 @@ var abduction = function(target, label) {
 		event_connect(widget.document, 'mouseleave', stop);
 		event_stop(event);
 	};
-	
 	// Resize left:
 	var action_left = function(event) {
 		var stop = function() {
