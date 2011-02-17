@@ -107,6 +107,7 @@ var abduction = function(target, label) {
 		var stop = function() {
 			widget.selection.className = null;
 			widget.overlay.className = null;
+			action_maximize_state = null;
 			
 			event_release(widget.selection, 'mousemove', move);
 			event_release(widget.selection, 'mousedown', stop);
@@ -129,6 +130,9 @@ var abduction = function(target, label) {
 			widget.overlay.style.zIndex = 10000002;
 			widget.selection.style.zIndex = 10000003;
 		};
+		
+		action_maximize_state = null;
+		action_maximize();
 		
 		widget.selection.className = 'x-ray';
 		widget.overlay.className = 'x-ray';
@@ -213,7 +217,7 @@ var abduction = function(target, label) {
 		widget.selection.style.top = top + 'px';
 		widget.selection.style.width = width + 'px';
 		
-		event_stop(event);
+		if (event) event_stop(event);
 	};
 	
 	var init_selection_top = function(event) {
