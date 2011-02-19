@@ -111,38 +111,45 @@ Abduction.prototype = {
 	},
 	
 	actionSave: function() {
-		var picker = Components.classes["@mozilla.org/filepicker;1"]
-			.createInstance(Components.interfaces.nsIFilePicker);
-		var io = Components.classes["@mozilla.org/network/io-service;1"]
-			.getService(Components.interfaces.nsIIOService);
-		var title = this.getDocumentTitle();
+		try {
+			var picker = Components.classes["@mozilla.org/filepicker;1"]
+				.createInstance(Components.interfaces.nsIFilePicker);
+			var io = Components.classes["@mozilla.org/network/io-service;1"]
+				.getService(Components.interfaces.nsIIOService);
+			var title = this.getDocumentTitle();
+			
+			// Create a 'Save As' dialog:
+			picker.init(
+				window, this.language.notice + ' ' + title,
+				Components.interfaces.nsIFilePicker.modeSave
+			);
+			picker.appendFilters(
+				Components.interfaces.nsIFilePicker.filterImages
+			);
+			picker.defaultExtension = '.png';
+			picker.defaultString = title + '.png';
+			
+			// Show picker, cancel on user interaction:
+			if (picker.show() == Components.interfaces.nsIFilePicker.returnCancel) return;
+			
+			// Write the file to disk, without a Download dialog:
+			var source = io.newURI(this.getDataURL(), 'utf8', null);
+			var persist = Components.classes["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
+				.createInstance(Components.interfaces.nsIWebBrowserPersist);
+			
+			persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
+			persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
+			
+			persist.saveURI(source, null, null, null, null, picker.file);
+			
+			// All done.
+			this.actionRemove();
+		}
 		
-		// Create a 'Save As' dialog:
-		picker.init(
-			window, this.language.notice + ' ' + title,
-			Components.interfaces.nsIFilePicker.modeSave
-		);
-		picker.appendFilters(
-			Components.interfaces.nsIFilePicker.filterImages
-		);
-		picker.defaultExtension = '.png';
-		picker.defaultString = title + '.png';
-		
-		// Show picker, cancel on user interaction:
-		if (picker.show() == Components.interfaces.nsIFilePicker.returnCancel) return;
-		
-		// Write the file to disk, without a Download dialog:
-		var source = io.newURI(this.getDataURL(), 'utf8', null);
-		var persist = Components.classes["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
-			.createInstance(Components.interfaces.nsIWebBrowserPersist);
-		
-		persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
-		persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
-		
-		persist.saveURI(source, null, null, null, null, picker.file);
-		
-		// All done.
-		this.actionRemove();
+		catch (error) {
+			this.console.error(error);
+			alert(this.language.sizeerror);
+		}
 	},
 	
 	actionXRay: function() {
