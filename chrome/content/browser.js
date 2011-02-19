@@ -1,25 +1,225 @@
-var abduction = function(target, label) {
-	var setting = {
-		min_height:			4,
-		min_width:			4,
-		scroll_factor:		0.5
-	};
+function Abduction(target, language) {
+	this.document = window.top.getBrowser().selectedBrowser.contentWindow.document;
+	this.language = language;
+	this.window = this.document.defaultView;
 	
-	var widget = {
-		window:				null,
-		document:			null,
-		root:				null,
-		body:				null,
-		overlay:			null,
-		selection:			null,
-		selection_inner:	null,
-		selection_top:		null,
-		selection_bottom:	null,
-		selection_left:		null,
-		selection_right:	null
-	};
+	// Prepare event handler:
+	this.events = new Events(this);
 	
-	var get_position = function(element) {
+	// Include stylesheet:
+	this.styles = this.document.createElement('link');
+	this.styles.setAttribute('rel', 'stylesheet');
+	this.styles.setAttribute('href', 'resource://abduction/browser.css');
+	this.document.documentElement.appendChild(this.styles);
+	
+	// Add overlay surface:
+	this.overlay = new Overlay(this);
+	
+	// Add selection:
+	this.selection = new Selection(this);
+	this.selection.setPosition(this.getElementPosition(
+		target
+			? target
+			: this.document.documentElement
+	));
+	
+	// Add 'noticebox' toolbar:
+	this.toolbar = new Toolbar(this);
+	
+	// Remove Abduction on window unload:
+	this.events.bind(this.window, 'unload', this.actionRemove);
+	
+	// Begin moving selection:
+	this.events.bind(this.selection.element, 'mousedown', this.actionMove);
+}
+Abduction.prototype = {
+	document: null,
+	events: null,
+	language: [],
+	overlay: null,
+	selection: null,
+	toolbar: null,
+	window: null,
+	
+	actionKeys: function(event) {
+		if (event.keyCode == 27) self.action_close();
+		else if (event.keyCode == 13) self.action_save();
+		else return;
+		
+		self.widgets.window.removeEventListener('keydown', self.action_keydown, false);
+	},
+	
+	actionMove: function(event) {
+		var stop = function() {
+			this.events.unbind(this.selection.element, 'mousemove', move);
+			this.events.unbind(this.selection.element, 'mouseup', stop);
+			this.events.unbind(this.overlay.element, 'mousemove', move);
+			this.events.unbind(this.overlay.element, 'mouseup', stop);
+		};
+		var move = function(event) {
+			var position = this.selection.getPosition();
+			var left = (event.pageX + offsetX);
+			var top = (event.pageY + offsetY);
+			var height = position.height;
+			var width = position.width;
+			
+			if (left < 0) left = 0;
+			if (top < 0) top = 0;
+			
+			if (left + width > this.document.documentElement.scrollWidth) {
+				left = this.document.documentElement.scrollWidth - width;
+			}
+			
+			if (top + height > this.document.documentElement.scrollHeight) {
+				top = this.document.documentElement.scrollHeight - height;
+			}
+			
+			position.top = top;
+			position.left = left;
+			
+			this.selection.setPosition(position);
+		};
+		
+		var position = this.selection.getPosition();
+		var offsetX = position.left - event.pageX;
+		var offsetY = position.top - event.pageY;
+		
+		this.events.bind(this.selection.element, 'mousemove', move);
+		this.events.bind(this.selection.element, 'mouseup', stop);
+		this.events.bind(this.overlay.element, 'mousemove', move);
+		this.events.bind(this.overlay.element, 'mouseup', stop);
+		
+		return false;
+	},
+	
+	actionSave: function() {
+		try {
+			var picker = Components.classes["@mozilla.org/filepicker;1"]
+				.createInstance(Components.interfaces.nsIFilePicker);
+			var io = Components.classes["@mozilla.org/network/io-service;1"]
+				.getService(Components.interfaces.nsIIOService);
+			
+			// Create a 'Save As' dialog:
+			picker.init(
+				window, label.notice + ' ' + self.filename,
+				Components.interfaces.nsIFilePicker.modeSave
+			);
+			picker.appendFilters(
+				Components.interfaces.nsIFilePicker.filterImages
+			);
+			picker.defaultExtension = '.png';
+			picker.defaultString = self.filename + '.png';
+			
+			// Show picker, cancel on user interaction:
+			if (picker.show() == Components.interfaces.nsIFilePicker.returnCancel) return;
+			
+			// Write the file to disk, without a Download dialog:
+			var source = io.newURI(self.getDataURL(), 'utf8', null);
+			var persist = Components.classes["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
+				.createInstance(Components.interfaces.nsIWebBrowserPersist);
+			
+			persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
+			persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
+			
+			persist.saveURI(source, null, null, null, null, picker.file);
+			
+			// All done.
+			self.action_close();
+		}
+		
+		catch (error) {
+			alert(label.sizeerror);
+		}
+	},
+	
+	actionRemove: function(event) {
+		this.events.remove();
+		this.toolbar.remove();
+		this.overlay.remove();
+		this.selection.remove();
+		
+		this.document.documentElement.removeChild(this.styles);
+	},
+	
+	actionXRay: function() {
+		var stop = function() {
+			this.selection.element.className = null;
+			this.overlay.element.className = null;
+			
+			this.events.unbind(this.selection.element, 'mousemove', move);
+			this.events.unbind(this.selection.element, 'mousedown', stop);
+			this.events.unbind(this.overlay.element, 'mousemove', move);
+			this.events.unbind(this.overlay.element, 'mousedown', stop);
+		};
+		var move = function(event) {
+			this.overlay.element.style.zIndex = -10000002;
+			this.selection.element.style.zIndex = -10000003;
+			
+			// Move selection out of the way:
+			this.selection.setPosition({
+				top:	0,
+				left:	0,
+				width:	0,
+				height: 0
+			});
+			
+			// Move selection above element:
+			this.selection.setPosition(
+				this.getElementPosition(
+					this.document.elementFromPoint(event.clientX, event.clientY)
+				)
+			);
+			
+			this.overlay.element.style.zIndex = 10000002;
+			this.selection.element.style.zIndex = 10000003;
+		};
+		
+		this.selection.setPosition(
+			this.getElementPosition(this.document.documentElement)
+		);
+		
+		this.selection.element.className = 'x-ray';
+		this.overlay.element.className = 'x-ray';
+		
+		this.events.bind(this.selection.element, 'mousemove', move);
+		this.events.bind(this.selection.element, 'mousedown', stop);
+		this.events.bind(this.overlay.element, 'mousemove', move);
+		this.events.bind(this.overlay.element, 'mousedown', stop);
+	},
+	
+	getDocumentTitle: function() {
+		return this.document.title
+			? this.document.title
+			: this.document.URL;
+	},
+	
+	getDataURL: function() {
+		var canvas = document.createElementNS('http://www.w3.org/1999/xhtml', 'html:canvas');
+		var context = canvas.getContext('2d');
+		var area = self.selection.getPosition();
+		
+		canvas.height = selection.height;
+		canvas.width = selection.width;
+		
+		self.overlay.style.display = 'none';
+		self.selection.style.display = 'none';
+		
+		context.drawWindow(
+			self.widgets.window,
+			area.left,
+			area.top,
+			area.width,
+			area.height,
+			'rgb(255, 255, 255)'
+		);
+		
+		self.overlay.style.display = 'block';
+		self.selection.style.display = 'block';
+		
+		return canvas.toDataURL('image/png', '');
+	},
+	
+	getElementPosition: function(element) {
 		var result = {
 			top:	element.offsetTop,
 			left:	element.offsetLeft,
@@ -36,830 +236,228 @@ var abduction = function(target, label) {
 		}
 		
 		return result;
-	};
-	
-	var scroll_to_y = function(min_y, max_y) {
-		var scroll_up = Math.round(
-			(24 - min_y + widget.root.scrollTop) * setting.scroll_factor
-		);
-		var scroll_down = Math.round(
-			(24 + max_y - widget.overlay.offsetHeight - widget.root.scrollTop) * setting.scroll_factor
-		);
-		
-		if (scroll_up > 0) {
-			widget.root.scrollTop -= scroll_up;
-		}
-		
-		else if (scroll_down > 0) {
-			widget.root.scrollTop += scroll_down;
-		}
-	};
-	
-	var scroll_to_x = function(min_x, max_x) {
-		var scroll_left = Math.round(
-			(24 - min_x + widget.root.scrollLeft) * setting.scroll_factor
-		);
-		var scroll_down = Math.round(
-			(24 + max_x - widget.overlay.offsetWidth - widget.root.scrollLeft) * setting.scroll_factor
-		);
-		
-		if (scroll_left > 0) {
-			widget.root.scrollLeft -= scroll_left;
-		}
-		
-		else if (scroll_down > 0) {
-			widget.root.scrollLeft += scroll_down;
-		}
-	};
-	
-	var event_connect = function(target, event, listener) {
-		target.addEventListener(event, listener, false);
-	};
-	
-	var event_release = function(target, event, listener) {
-		target.removeEventListener(event, listener, false);
-	};
-	
-	var event_stop = function(event) {
-		if (event.preventDefault) {
-			event.preventDefault();
-		}
-		
-		event.stopPropagation();
-	};
-	
-	var position_selection = function(position) {
-		if (position.height < setting.min_height) {
-			position.height = setting.min_height;
-		}
-		
-		if (position.width < setting.min_width) {
-			position.width = setting.min_width;
-		}
-		
-		widget.selection.style.height = position.height + 'px';
-		widget.selection.style.left = position.left + 'px';
-		widget.selection.style.top = position.top + 'px';
-		widget.selection.style.width = position.width + 'px';
-	};
-	
-	var action_auto = function() {
-		var stop = function() {
-			widget.selection.className = null;
-			widget.overlay.className = null;
-			action_maximize_state = null;
-			
-			event_release(widget.selection, 'mousemove', move);
-			event_release(widget.selection, 'mousedown', stop);
-			event_release(widget.overlay, 'mousemove', move);
-			event_release(widget.overlay, 'mousedown', stop);
-		};
-		var move = function(event) {
-			widget.overlay.style.zIndex = -10000002;
-			widget.selection.style.zIndex = -10000003;
-			
-			widget.selection.style.height = 0;
-			widget.selection.style.left = 0;
-			widget.selection.style.top = 0;
-			widget.selection.style.width = 0;
-			
-			var element = widget.document.elementFromPoint(event.clientX, event.clientY);
-			
-			position_selection(get_position(element));
-			
-			widget.overlay.style.zIndex = 10000002;
-			widget.selection.style.zIndex = 10000003;
-		};
-		
-		action_maximize_state = null;
-		action_maximize();
-		
-		widget.selection.className = 'x-ray';
-		widget.overlay.className = 'x-ray';
-		
-		event_connect(widget.selection, 'mousemove', move);
-		event_connect(widget.selection, 'mousedown', stop);
-		event_connect(widget.overlay, 'mousemove', move);
-		event_connect(widget.overlay, 'mousedown', stop);
-	};
-	
-	var action_move = function(event) {
-		var stop = function() {
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			var position = get_position(widget.selection);
-			var left = (event.pageX + offsetX);
-			var top = (event.pageY + offsetY);
-			var height = position.height;
-			var width = position.width;
-			
-			if (left < 0) left = 0;
-			if (top < 0) top = 0;
-			
-			if (left + width > widget.root.scrollWidth) {
-				left = widget.root.scrollWidth - width;
-			}
-			
-			if (top + height > widget.root.scrollHeight) {
-				top = widget.root.scrollHeight - height;
-			}
-			
-			scroll_to_y(top, top + height);
-			scroll_to_x(left, left + width);
-			
-			widget.selection.style.left = left + 'px';
-			widget.selection.style.top = top + 'px';
-		};
-		
-		if (action_maximize_state != null) return;
-		
-		var position = get_position(widget.selection);
-		var offsetX = position.left - event.pageX;
-		var offsetY = position.top - event.pageY;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Maximze selection:
-	var action_maximize_state = null;
-	var action_maximize = function() {
-		if (action_maximize_state != null) {
-			var position = action_maximize_state;
-			var height = position.height;
-			var width = position.width;
-			var top = position.top;
-			var left = position.left;
-			
-			action_maximize_state = null;
-		}
-		
-		else {
-			var height = widget.root.scrollHeight;
-			var width = widget.root.scrollWidth;
-			var top = 0, left = 0;
-			
-			action_maximize_state = get_position(widget.selection);
-		}
-		
-		widget.selection.style.height = height + 'px';
-		widget.selection.style.left = left + 'px';
-		widget.selection.style.top = top + 'px';
-		widget.selection.style.width = width + 'px';
-	};
-	
-	var init_selection_top = function(event) {
-		var selection = get_position(widget.selection);
-		
-		return {
-			selection:	selection,
-			offset:		selection.top - event.pageY,
-			height:		selection.height + selection.top
-		};
-	};
-	
-	var init_selection_bottom = function(event) {
-		var selection = get_position(widget.selection);
-		
-		return {
-			selection:	selection,
-			offset:		selection.height - event.pageY
-		};
-	};
-	
-	var init_selection_left = function(event) {
-		var selection = get_position(widget.selection);
-		
-		return {
-			selection:	selection,
-			offset:		selection.left - event.pageX,
-			width:		selection.width + selection.left
-		};
-	};
-	
-	var init_selection_right = function(event) {
-		var selection = get_position(widget.selection);
-		
-		return {
-			selection:	selection,
-			offset:		selection.width - event.pageX
-		};
-	};
-	
-	var set_selection_top = function(event, context) {
-		var top = event.pageY + context.offset;
-		var height = context.height;
-		
-		if (top < 0) top = 0;
-		
-		if (height - top < setting.min_height) {
-			height = setting.min_height;
-			top = context.height - height;
-		}
-		
-		else {
-			height -= top;
-		}
-		
-		scroll_to_y(event.pageY, event.pageY);
-		
-		widget.selection.style.height = height + 'px';
-		widget.selection.style.top = top + 'px';
-	};
-	
-	var set_selection_bottom = function(event, context) {
-		var height = (event.pageY + context.offset);
-		
-		if (height < setting.min_height) {
-			height = setting.min_height;
-		}
-		
-		if (context.selection.top + height > widget.root.scrollHeight) {
-			height = widget.root.scrollHeight - context.selection.top;
-		}
-		
-		scroll_to_y(event.pageY, event.pageY);
-		
-		widget.selection.style.height = height + 'px';
-	};
-	
-	var set_selection_left = function(event, context) {
-		var left = event.pageX + context.offset;
-		var width = context.width;
-		
-		if (left < 0) left = 0;
-		
-		if (width - left < setting.min_width) {
-			width = setting.min_width;
-			left = context.width - width;
-		}
-		
-		else {
-			width -= left;
-		}
-		
-		scroll_to_x(event.pageX, event.pageX);
-		
-		widget.selection.style.width = width + 'px';
-		widget.selection.style.left = left + 'px';
-	};
-	
-	var set_selection_right = function(event, context) {
-		var width = (event.pageX + context.offset);
-		
-		if (width < setting.min_width) {
-			width = setting.min_width;
-		}
-		
-		if (context.selection.left + width > widget.root.scrollWidth) {
-			width = widget.root.scrollWidth - context.selection.left;
-		}
-		
-		scroll_to_x(event.pageX, event.pageX);
-		
-		widget.selection.style.width = width + 'px';
-	};
-	
-	// Resize top:
-	var action_top = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-top');
-			widget.selection.setAttribute('state', 'resize-top');
-			
-			set_selection_top(event, context_top);
-		};
-		
-		var context_top = init_selection_top(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Resize top left:
-	var action_top_left = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-top-left');
-			widget.selection.setAttribute('state', 'resize-top-left');
-			
-			set_selection_top(event, context_top);
-			set_selection_left(event, context_left);
-		};
-		
-		var context_top = init_selection_top(event);
-		var context_left = init_selection_left(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Resize top right:
-	var action_top_right = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-top-right');
-			widget.selection.setAttribute('state', 'resize-top-right');
-			
-			set_selection_top(event, context_top);
-			set_selection_right(event, context_right);
-		};
-		
-		var context_top = init_selection_top(event);
-		var context_right = init_selection_right(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Resize bottom:
-	var action_bottom = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-bottom');
-			widget.selection.setAttribute('state', 'resize-bottom');
-			
-			set_selection_bottom(event, context_bottom);
-		};
-		
-		var context_bottom = init_selection_bottom(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Resize bottom left:
-	var action_bottom_left = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-bottom-left');
-			widget.selection.setAttribute('state', 'resize-bottom-left');
-			
-			set_selection_bottom(event, context_bottom);
-			set_selection_left(event, context_left);
-		};
-		
-		var context_bottom = init_selection_bottom(event);
-		var context_left = init_selection_left(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Resize bottom right:
-	var action_bottom_right = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-bottom-right');
-			widget.selection.setAttribute('state', 'resize-bottom-right');
-			
-			set_selection_bottom(event, context_bottom);
-			set_selection_right(event, context_right);
-		};
-		
-		var context_bottom = init_selection_bottom(event);
-		var context_right = init_selection_right(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	// Resize left:
-	var action_left = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-left');
-			widget.selection.setAttribute('state', 'resize-left');
-			
-			set_selection_left(event, context_left);
-		};
-		
-		var context_left = init_selection_left(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Resize right:
-	var action_right = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'resize-right');
-			widget.selection.setAttribute('state', 'resize-right');
-			
-			set_selection_right(event, context_right);
-		};
-		
-		var context_right = init_selection_right(event);
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Select:
-	var action_all = function(event) {
-		var stop = function() {
-			widget.overlay.setAttribute('state', '');
-			widget.selection.setAttribute('state', '');
-			
-			event_release(widget.selection, 'mousemove', move)
-			event_release(widget.selection, 'mouseup', stop);
-			event_release(widget.overlay, 'mousemove', move)
-			event_release(widget.overlay, 'mouseup', stop);
-			event_release(widget.document, 'mouseleave', stop);
-		};
-		var move = function(event) {
-			widget.overlay.setAttribute('state', 'selecting');
-			widget.selection.setAttribute('state', 'selecting');
-			
-			if (start.x < event.pageX) {
-				var width = event.pageX - start.x;
-				var left = start.x;
-			}
-			
-			else {
-				var width = start.x - event.pageX;
-				var left = event.pageX;
-			}
-			
-			if (start.y < event.pageY) {
-				var height = event.pageY - start.y;
-				var top = start.y;
-			}
-			
-			else {
-				var height = start.y - event.pageY;
-				var top = event.pageY;
-			}
-			
-			if (width < 4) width = 4;
-			if (height < 4) height = 4;
-			
-			scroll_to_y(event.pageY, event.pageY);
-			scroll_to_x(event.pageX, event.pageX);
-			
-			widget.selection.style.top = top + 'px';
-			widget.selection.style.left = left + 'px';
-			widget.selection.style.width = width + 'px';
-			widget.selection.style.height = height + 'px';
-		};
-		
-		var start = {
-			x:	event.pageX,
-			y:	event.pageY
-		};
-		
-		action_maximize_state = null;
-		
-		event_connect(widget.selection, 'mousemove', move)
-		event_connect(widget.selection, 'mouseup', stop);
-		event_connect(widget.overlay, 'mousemove', move)
-		event_connect(widget.overlay, 'mouseup', stop);
-		event_connect(widget.document, 'mouseleave', stop);
-		event_stop(event);
-	};
-	
-	// Define widgets:
-	widget.document = window.top.getBrowser().selectedBrowser.contentWindow.document;
-	widget.window = widget.document.defaultView;
-	widget.root = widget.document.documentElement;
-	widget.overlay = widget.document.createElement('abduction-overlay');
-	widget.selection = widget.document.createElement('abduction-selection');
-	widget.selection_inner = widget.document.createElement('abduction-selection-inner');
-	widget.selection_top = widget.document.createElement('abduction-selection-top');
-	widget.selection_top_left = widget.document.createElement('abduction-selection-top-left');
-	widget.selection_top_right = widget.document.createElement('abduction-selection-top-right');
-	widget.selection_bottom = widget.document.createElement('abduction-selection-bottom');
-	widget.selection_bottom_left = widget.document.createElement('abduction-selection-bottom-left');
-	widget.selection_bottom_right = widget.document.createElement('abduction-selection-bottom-right');
-	widget.selection_left = widget.document.createElement('abduction-selection-left');
-	widget.selection_right = widget.document.createElement('abduction-selection-right');
-	
-	var styles = widget.document.createElement('link');
-	styles.setAttribute('rel', 'stylesheet');
-	styles.setAttribute('href', 'resource://abduction/browser.css');
-	widget.root.appendChild(styles);
-	widget.root.appendChild(widget.overlay);
-	
-	if (target) {
-		var target_position = get_position(target);
-		
-		if (target_position.height < setting.min_height) {
-			target_position.height = setting.min_height;
-		}
-		
-		if (target_position.width < setting.min_width) {
-			target_position.width = setting.min_width;
-		}
-		
-		widget.selection.style.height = target_position.height + 'px';
-		widget.selection.style.left = target_position.left + 'px';
-		widget.selection.style.top = target_position.top + 'px';
-		widget.selection.style.width = target_position.width + 'px';
 	}
-	
-	else {
-		widget.selection.style.height = (widget.window.innerHeight * 0.33) + 'px';
-		widget.selection.style.left = (widget.window.innerWidth * 0.33) + 'px';
-		widget.selection.style.top = (widget.root.scrollTop + (widget.window.innerHeight * 0.33)) + 'px';
-		widget.selection.style.width = (widget.window.innerWidth * 0.33) + 'px';
-	}
-	
-	widget.root.appendChild(widget.selection);
-	widget.selection.appendChild(widget.selection_inner);
-	widget.selection_inner.appendChild(widget.selection_top);
-	widget.selection_inner.appendChild(widget.selection_top_left);
-	widget.selection_inner.appendChild(widget.selection_top_right);
-	widget.selection_inner.appendChild(widget.selection_bottom);
-	widget.selection_inner.appendChild(widget.selection_bottom_left);
-	widget.selection_inner.appendChild(widget.selection_bottom_right);
-	widget.selection_inner.appendChild(widget.selection_left);
-	widget.selection_inner.appendChild(widget.selection_right);
-	
-	widget.overlay.setAttribute('state', '');
-	widget.selection.setAttribute('state', '');
-	
-	// Bind actions:
-	event_connect(widget.overlay, 'mousedown', action_all);
-	event_connect(widget.selection, 'mousedown', action_move);
-	event_connect(widget.selection, 'dblclick', action_maximize);
-	event_connect(widget.selection_top, 'mousedown', action_top);
-	event_connect(widget.selection_top_left, 'mousedown', action_top_left);
-	event_connect(widget.selection_top_right, 'mousedown', action_top_right);
-	event_connect(widget.selection_bottom, 'mousedown', action_bottom);
-	event_connect(widget.selection_bottom_left, 'mousedown', action_bottom_left);
-	event_connect(widget.selection_bottom_right, 'mousedown', action_bottom_right);
-	event_connect(widget.selection_left, 'mousedown', action_left);
-	event_connect(widget.selection_right, 'mousedown', action_right);
-	
-	/*-------------------------------------------------------------------------------------------*/
+}
 
-	var capture = function() {
-		var canvas = document.createElementNS('http://www.w3.org/1999/xhtml', 'html:canvas');
-		var context = canvas.getContext('2d');
-		var selection = get_position(widget.selection);
+function Events(parent) {
+	this.parent = parent;
+}
+Events.prototype = {
+	active: [],
+	parent: null,
+	
+	createEventHandler: function(callback) {
+		var self = this.parent;
 		
-		canvas.height = selection.height;
-		canvas.width = selection.width;
-		
-		widget.overlay.style.display = 'none';
-		widget.selection.style.display = 'none';
-		
-		context.drawWindow(
-			widget.window,
-			selection.left,
-			selection.top,
-			selection.width,
-			selection.height,
-			'rgb(255, 255, 255)'
-		);
-		
-		widget.overlay.style.display = 'block';
-		widget.selection.style.display = 'block';
-		
-		return canvas.toDataURL('image/png', '');
-	};
-	var action_close = function(event) {
-		event_release(notice, 'command', action_close);
-		event_release(widget.window, 'unload', action_close);
-		event_release(widget.window, 'keydown', action_keydown);
-		
-		widget.root.removeChild(styles);
-		widget.root.removeChild(widget.overlay);
-		widget.root.removeChild(widget.selection);
-		notices.removeAllNotifications(true);
-	};
-	var action_save = function() {
-		try {
-			var picker = Components.classes["@mozilla.org/filepicker;1"]
-				.createInstance(Components.interfaces.nsIFilePicker);
-			var io = Components.classes["@mozilla.org/network/io-service;1"]
-				.getService(Components.interfaces.nsIIOService);
-			
-			// Create a 'Save As' dialog:
-			picker.init(
-				window, label.notice + ' ' + filename,
-				Components.interfaces.nsIFilePicker.modeSave
-			);
-			picker.appendFilters(
-				Components.interfaces.nsIFilePicker.filterImages
-			);
-			picker.defaultExtension = '.png';
-			picker.defaultString = filename + '.png';
-			
-			// Show picker, cancel on user interaction:
-			if (picker.show() == Components.interfaces.nsIFilePicker.returnCancel) return;
-			
-			// Write the file to disk, without a Download dialog:
-			var source = io.newURI(capture(), 'utf8', null);
-			var persist = Components.classes["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
-				.createInstance(Components.interfaces.nsIWebBrowserPersist);
-			
-			persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
-			persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
-			
-			persist.saveURI(source, null, null, null, null, picker.file);
-			
-			// All done.
-			action_close();
-		}
-		
-		catch (error) {
-			alert(label.sizeerror);
-		}
-	};
-	var action_keydown = function(event) {
-		if (event.keyCode == 27) action_close();
-		else if (event.keyCode == 13) action_save();
-		else return;
-		
-		event_release(widget.window, 'keydown', action_keydown);
-	};
-	var append_notice = function() {
-		return notices.appendNotification(
-			label.notice + ' ' + filename, 'abduction-controls',
-			null, notices.PRIORITY_INFO_HIGH, [
-				{
-					label:		label.autoselect,
-					callback:	function() {
-						try {
-							action_auto();
-						}
-						
-						catch (error) {
-							alert(error);
-						}
-						
-						return true;
-					}
-				},
-				{
-					label:		label.selectall,
-					callback:	function() {
-						try {
-							action_maximize();
-						}
-						
-						catch (error) {
-							alert(error);
-						}
-						
-						return true;
-					}
-				},
-				{
-					label:		label.save,
-					accessKey:	label.accesskey,
-					callback:	function() {
-						try {
-							action_save();
-						}
-						
-						catch (error) {
-							alert(error);
-						}
-						
-						return true;
-					}
+		return function(event) {
+			var result = callback.apply(self, arguments);
+			//alert('ok');
+			if (result == false) {
+				if (event.preventDefault) {
+					event.preventDefault();
 				}
-			]
-		);
-	};
+				
+				event.stopPropagation();
+			}
+		}
+	},
 	
-	var notices = window.getNotificationBox(widget.window);
-	var filename = (widget.document.title ? widget.document.title : widget.document.URL);
-	var notice = append_notice();
-	var notice_allow_close = true;
+	bind: function(element, type, callback) {
+		var handler = this.createEventHandler(callback);
+		
+		this.active.push({
+			element: element,
+			type: type,
+			callback: callback,
+			handler: handler
+		});
+		
+		element.addEventListener(type, handler, false);
+	},
 	
-	event_connect(notice, 'command', action_close);
-	event_connect(widget.window, 'unload', action_close);
-	event_connect(widget.window, 'keydown', action_keydown);
+	remove: function() {
+		this.active.forEach(function(item) {
+			item.element.removeEventListener(item.type, item.handler, false);
+		});
+	},
+	
+	unbind: function(element, type, callback) {
+		this.active = this.active.filter(function(item) {
+			if (element != item.element) return true;
+			if (type != item.type) return true;
+			if (callback != item.callback) return true;
+			
+			/*
+			alert(
+				'[ '
+				+ item.element.nodeName
+				+ '.'
+				+ type
+				+ ':'
+				+ item.type
+				+ ' ] '
+				+ item.callback.toString()
+			);
+			*/
+			
+			item.element.removeEventListener(item.type, item.handler, false);
+			
+			return false;
+		});
+	},
 };
+
+function Toolbar(parent) {
+	this.events = parent.events;
+	this.parent = parent;
+	this.notices = window.getNotificationBox(parent.window);
+	this.notice = this.notices.appendNotification(
+		parent.language.notice + ' ' + parent.getDocumentTitle(),
+		'abduction-controls', null,
+		this.notices.PRIORITY_INFO_HIGH,
+		[
+			{
+				label:		parent.language.autoselect,
+				callback:	function() {
+					try {
+						parent.actionXRay();
+						//self.action_auto();
+					}
+					
+					catch (error) {
+						alert(error);
+					}
+					
+					return true;
+				}
+			},
+			{
+				label:		parent.language.selectall,
+				callback:	function() {
+					try {
+						//self.action_maximize();
+					}
+					
+					catch (error) {
+						alert(error);
+					}
+					
+					return true;
+				}
+			},
+			{
+				label:		parent.language.save,
+				accessKey:	parent.language.accesskey,
+				callback:	function() {
+					try {
+						//self.action_save();
+					}
+					
+					catch (error) {
+						alert(error);
+					}
+					
+					return true;
+				}
+			}
+		]
+	);
+	this.events.bind(this.notice, 'command', parent.actionRemove);
+}
+Toolbar.prototype = {
+	events: null,
+	notice: null,
+	parent: null,
+	
+	actionRemove: function() {
+		this.events.unbind(this.notice, 'command', parent.actionRemove);
+		this.notices.removeNotification(this.notice);
+	}
+}
+
+function Overlay(parent) {
+	this.events = parent.events;
+	this.parent = parent;
+	this.element = this.parent.document.createElement('abduction-overlay');
+	this.parent.document.documentElement.appendChild(this.element);
+}
+Overlay.prototype = {
+	element: null,
+	events: null,
+	parent: null,
+	
+	actionRemove: function() {
+		this.parent.document.documentElement.removeChild(
+			this.element
+		);
+	}
+}
+
+function Selection(parent) {
+	this.events = parent.events;
+	this.parent = parent;
+	this.element = this.parent.document.createElement('abduction-selection');
+	this.inner = this.parent.document.createElement('abduction-selection-inner');
+	
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-top')
+	);
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-top-left')
+	);
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-top-right')
+	);
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-bottom')
+	);
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-bottom-left')
+	);
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-bottom-right')
+	);
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-left')
+	);
+	this.inner.appendChild(
+		this.parent.document.createElement('abduction-selection-right')
+	);
+	this.parent.document.documentElement.appendChild(this.element);
+	this.element.appendChild(this.inner);
+}
+Selection.prototype = {
+	element: null,
+	events: null,
+	inner: null,
+	minimumHeight: 4,
+	minimumWidth: 4,
+	parent: null,
+	
+	getPosition: function() {
+		return this.parent.getElementPosition(
+			this.element
+		);
+	},
+	
+	actionRemove: function() {
+		this.parent.document.documentElement.removeChild(
+			this.element
+		);
+	},
+	
+	setPosition: function(position) {
+		if (position.height < this.minimumHeight) {
+			position.height = this.minimumHeight;
+		}
+		
+		if (position.width < this.minimumWidth) {
+			position.width = this.minimumWidth;
+		}
+		
+		this.element.style.height = position.height + 'px';
+		this.element.style.left = position.left + 'px';
+		this.element.style.top = position.top + 'px';
+		this.element.style.width = position.width + 'px';
+	}
+}

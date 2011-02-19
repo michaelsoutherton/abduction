@@ -11,7 +11,7 @@
 			key="key_Abduction"
 			label="&abduction.menu;"
 			oncommand="
-				abduction(document.popupNode, {
+				new Abduction(document.popupNode, {
 					notice:		'&abduction.notice;',
 					save:		'&abduction.save;',
 					selectall:	'&abduction.selectall;',
@@ -30,7 +30,7 @@
 			insertafter="context-savepage"
 			label="&abduction.menu;"
 			oncommand="
-				abduction(document.popupNode, {
+				new Abduction(document.popupNode, {
 					notice:		'&abduction.notice;',
 					save:		'&abduction.save;',
 					selectall:	'&abduction.selectall;',
