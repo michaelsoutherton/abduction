@@ -92,53 +92,48 @@ Abduction.prototype = {
 		return false;
 	},
 	
-	actionSave: function() {
-		try {
-			var picker = Components.classes["@mozilla.org/filepicker;1"]
-				.createInstance(Components.interfaces.nsIFilePicker);
-			var io = Components.classes["@mozilla.org/network/io-service;1"]
-				.getService(Components.interfaces.nsIIOService);
-			
-			// Create a 'Save As' dialog:
-			picker.init(
-				window, label.notice + ' ' + self.filename,
-				Components.interfaces.nsIFilePicker.modeSave
-			);
-			picker.appendFilters(
-				Components.interfaces.nsIFilePicker.filterImages
-			);
-			picker.defaultExtension = '.png';
-			picker.defaultString = self.filename + '.png';
-			
-			// Show picker, cancel on user interaction:
-			if (picker.show() == Components.interfaces.nsIFilePicker.returnCancel) return;
-			
-			// Write the file to disk, without a Download dialog:
-			var source = io.newURI(self.getDataURL(), 'utf8', null);
-			var persist = Components.classes["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
-				.createInstance(Components.interfaces.nsIWebBrowserPersist);
-			
-			persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
-			persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
-			
-			persist.saveURI(source, null, null, null, null, picker.file);
-			
-			// All done.
-			self.action_close();
-		}
-		
-		catch (error) {
-			alert(label.sizeerror);
-		}
-	},
-	
 	actionRemove: function(event) {
-		this.events.remove();
-		this.toolbar.remove();
-		this.overlay.remove();
-		this.selection.remove();
+		this.events.actionRemove();
+		this.toolbar.actionRemove();
+		this.overlay.actionRemove();
+		this.selection.actionRemove();
 		
 		this.document.documentElement.removeChild(this.styles);
+	},
+	
+	actionSave: function() {
+		var picker = Components.classes["@mozilla.org/filepicker;1"]
+			.createInstance(Components.interfaces.nsIFilePicker);
+		var io = Components.classes["@mozilla.org/network/io-service;1"]
+			.getService(Components.interfaces.nsIIOService);
+		var title = this.getDocumentTitle();
+		
+		// Create a 'Save As' dialog:
+		picker.init(
+			window, this.language.notice + ' ' + title,
+			Components.interfaces.nsIFilePicker.modeSave
+		);
+		picker.appendFilters(
+			Components.interfaces.nsIFilePicker.filterImages
+		);
+		picker.defaultExtension = '.png';
+		picker.defaultString = title + '.png';
+		
+		// Show picker, cancel on user interaction:
+		if (picker.show() == Components.interfaces.nsIFilePicker.returnCancel) return;
+		
+		// Write the file to disk, without a Download dialog:
+		var source = io.newURI(this.getDataURL(), 'utf8', null);
+		var persist = Components.classes["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
+			.createInstance(Components.interfaces.nsIWebBrowserPersist);
+		
+		persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
+		persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
+		
+		persist.saveURI(source, null, null, null, null, picker.file);
+		
+		// All done.
+		this.actionRemove();
 	},
 	
 	actionXRay: function() {
@@ -187,25 +182,19 @@ Abduction.prototype = {
 		this.events.bind(this.overlay.element, 'mousedown', stop);
 	},
 	
-	getDocumentTitle: function() {
-		return this.document.title
-			? this.document.title
-			: this.document.URL;
-	},
-	
 	getDataURL: function() {
 		var canvas = document.createElementNS('http://www.w3.org/1999/xhtml', 'html:canvas');
 		var context = canvas.getContext('2d');
-		var area = self.selection.getPosition();
+		var area = this.selection.getPosition();
 		
-		canvas.height = selection.height;
-		canvas.width = selection.width;
+		canvas.height = area.height;
+		canvas.width = area.width;
 		
-		self.overlay.style.display = 'none';
-		self.selection.style.display = 'none';
+		this.overlay.element.style.display = 'none';
+		this.selection.element.style.display = 'none';
 		
 		context.drawWindow(
-			self.widgets.window,
+			this.window,
 			area.left,
 			area.top,
 			area.width,
@@ -213,10 +202,16 @@ Abduction.prototype = {
 			'rgb(255, 255, 255)'
 		);
 		
-		self.overlay.style.display = 'block';
-		self.selection.style.display = 'block';
+		this.overlay.element.style.display = 'block';
+		this.selection.element.style.display = 'block';
 		
 		return canvas.toDataURL('image/png', '');
+	},
+	
+	getDocumentTitle: function() {
+		return this.document.title
+			? this.document.title
+			: this.document.URL;
 	},
 	
 	getElementPosition: function(element) {
@@ -246,20 +241,10 @@ Events.prototype = {
 	active: [],
 	parent: null,
 	
-	createEventHandler: function(callback) {
-		var self = this.parent;
-		
-		return function(event) {
-			var result = callback.apply(self, arguments);
-			//alert('ok');
-			if (result == false) {
-				if (event.preventDefault) {
-					event.preventDefault();
-				}
-				
-				event.stopPropagation();
-			}
-		}
+	actionRemove: function() {
+		this.active.forEach(function(item) {
+			item.element.removeEventListener(item.type, item.handler, false);
+		});
 	},
 	
 	bind: function(element, type, callback) {
@@ -275,10 +260,20 @@ Events.prototype = {
 		element.addEventListener(type, handler, false);
 	},
 	
-	remove: function() {
-		this.active.forEach(function(item) {
-			item.element.removeEventListener(item.type, item.handler, false);
-		});
+	createEventHandler: function(callback) {
+		var self = this.parent;
+		
+		return function(event) {
+			var result = callback.apply(self, arguments);
+			//alert('ok');
+			if (result == false) {
+				if (event.preventDefault) {
+					event.preventDefault();
+				}
+				
+				event.stopPropagation();
+			}
+		}
 	},
 	
 	unbind: function(element, type, callback) {
@@ -321,11 +316,10 @@ function Toolbar(parent) {
 				callback:	function() {
 					try {
 						parent.actionXRay();
-						//self.action_auto();
 					}
 					
 					catch (error) {
-						alert(error);
+						alert(error.name + ': ' + error);
 					}
 					
 					return true;
@@ -335,11 +329,11 @@ function Toolbar(parent) {
 				label:		parent.language.selectall,
 				callback:	function() {
 					try {
-						//self.action_maximize();
+						//parent.actionSelectAll();
 					}
 					
 					catch (error) {
-						alert(error);
+						alert(error.name + ': ' + error);
 					}
 					
 					return true;
@@ -350,11 +344,11 @@ function Toolbar(parent) {
 				accessKey:	parent.language.accesskey,
 				callback:	function() {
 					try {
-						//self.action_save();
+						parent.actionSave();
 					}
 					
 					catch (error) {
-						alert(error);
+						alert(error.name + ': ' + error);
 					}
 					
 					return true;
