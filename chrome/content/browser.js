@@ -3,6 +3,10 @@ function Abduction(target, language) {
 	this.language = language;
 	this.window = this.document.defaultView;
 	
+	// Prepare the console:
+	this.console = new Console(this);
+	this.console.enableMessages = true;
+	
 	// Prepare event handler:
 	this.events = new Events(this);
 	
@@ -31,8 +35,11 @@ function Abduction(target, language) {
 	
 	// Begin moving selection:
 	this.events.bind(this.selection.element, 'mousedown', this.actionMove);
+	
+	this.console.message('Abduction: begins');
 }
 Abduction.prototype = {
+	console: null,
 	document: null,
 	events: null,
 	language: [],
@@ -99,6 +106,8 @@ Abduction.prototype = {
 		this.selection.actionRemove();
 		
 		this.document.documentElement.removeChild(this.styles);
+		
+		this.console.message('Abduction: ends');
 	},
 	
 	actionSave: function() {
@@ -234,6 +243,26 @@ Abduction.prototype = {
 	}
 }
 
+function Console(parent) {
+	this.parent = parent;
+	this.service = Components.classes["@mozilla.org/consoleservice;1"]
+		.getService(Components.interfaces.nsIConsoleService);
+}
+Console.prototype = {
+	enableErrors: true,
+	enableMessages: false,
+	parent: null,
+	service: null,
+	
+	error: function(message) {
+		if (this.enableErrors) Components.utils.reportError(message);
+	},
+	
+	message: function(message) {
+		if (this.enableMessages) this.service.logStringMessage(message);
+	}
+};
+
 function Events(parent) {
 	this.parent = parent;
 }
@@ -319,7 +348,7 @@ function Toolbar(parent) {
 					}
 					
 					catch (error) {
-						alert(error.name + ': ' + error);
+						parent.console.error(error);
 					}
 					
 					return true;
@@ -333,7 +362,7 @@ function Toolbar(parent) {
 					}
 					
 					catch (error) {
-						alert(error.name + ': ' + error);
+						parent.console.error(error);
 					}
 					
 					return true;
@@ -348,7 +377,8 @@ function Toolbar(parent) {
 					}
 					
 					catch (error) {
-						alert(error.name + ': ' + error);
+						parent.console.error(error);
+						//alert(error.name + ': ' + error);
 					}
 					
 					return true;
