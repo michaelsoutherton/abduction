@@ -53,7 +53,7 @@
 		</em:localized>
 		
 		<em:name>Abduction!</em:name>
-		<em:version>3.0.9</em:version>		
+		<em:version>3.0.10</em:version>		
 		<em:description>Lets you capture an image of a web page, select the part you want and save it.</em:description>
 		<em:homepageURL>http://github.com/rowan-lewis/abduction</em:homepageURL>
 		<em:iconURL>chrome://abduction/content/icon.png</em:iconURL>
@@ -65,7 +65,7 @@
 		<em:translator>Endor</em:translator>
 		<em:translator>Stefano Tintorini</em:translator>
 		<em:translator>Tim Babych</em:translator>
-		<em:translator>Mr Dark</em:translator>
+		<em:translator>Arkadiusz Dwojak</em:translator>
 		
 		<!-- Firefox -->
 		<em:targetApplication>
