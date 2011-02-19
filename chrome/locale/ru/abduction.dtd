@@ -4,3 +4,4 @@
 <!ENTITY abduction.autoselect	"X-Ray">
 <!ENTITY abduction.accesskey	"С">
 <!ENTITY abduction.menu			"Сохранить страницу как изображение…">
+<!ENTITY abduction.sizeerror	"Sorry, the image is too large, Firefox can not save it.">

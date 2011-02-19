@@ -16,7 +16,8 @@
 					save:		'&abduction.save;',
 					selectall:	'&abduction.selectall;',
 					autoselect:	'&abduction.autoselect;',
-                    accesskey:	'&abduction.accesskey;'
+                    accesskey:	'&abduction.accesskey;',
+                    sizeerror:	'&abduction.sizeerror;'
 				});
 			"
 		/>
@@ -34,7 +35,8 @@
 					save:		'&abduction.save;',
 					selectall:	'&abduction.selectall;',
 					autoselect:	'&abduction.autoselect;',
-                    accesskey:	'&abduction.accesskey;'
+                    accesskey:	'&abduction.accesskey;',
+                    sizeerror:	'&abduction.sizeerror;'
 				});
 			"
 		/>

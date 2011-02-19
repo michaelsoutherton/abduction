@@ -4,3 +4,4 @@
 <!ENTITY abduction.autoselect	"X-Ray">
 <!ENTITY abduction.accesskey	"S">
 <!ENTITY abduction.menu			"Save Page As Image…">
+<!ENTITY abduction.sizeerror	"Sorry, the image is too large, Firefox can not save it.">

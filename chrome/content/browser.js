@@ -103,7 +103,7 @@ var abduction = function(target, label) {
 		widget.selection.style.width = position.width + 'px';
 	};
 	
-	var action_auto = function(event) {
+	var action_auto = function() {
 		var stop = function() {
 			widget.selection.className = null;
 			widget.overlay.className = null;
@@ -141,7 +141,6 @@ var abduction = function(target, label) {
 		event_connect(widget.selection, 'mousedown', stop);
 		event_connect(widget.overlay, 'mousemove', move);
 		event_connect(widget.overlay, 'mousedown', stop);
-		event_stop(event);
 	};
 	
 	var action_move = function(event) {
@@ -193,7 +192,7 @@ var abduction = function(target, label) {
 	
 	// Maximze selection:
 	var action_maximize_state = null;
-	var action_maximize = function(event) {
+	var action_maximize = function() {
 		if (action_maximize_state != null) {
 			var position = action_maximize_state;
 			var height = position.height;
@@ -216,8 +215,6 @@ var abduction = function(target, label) {
 		widget.selection.style.left = left + 'px';
 		widget.selection.style.top = top + 'px';
 		widget.selection.style.width = width + 'px';
-		
-		if (event) event_stop(event);
 	};
 	
 	var init_selection_top = function(event) {
@@ -748,7 +745,7 @@ var abduction = function(target, label) {
 		widget.overlay.style.display = 'block';
 		widget.selection.style.display = 'block';
 		
-		return canvas.toDataURL();
+		return canvas.toDataURL('image/png', '');
 	};
 	var action_close = function(event) {
 		event_release(notice, 'command', action_close);
@@ -760,12 +757,44 @@ var abduction = function(target, label) {
 		widget.root.removeChild(widget.selection);
 		notices.removeAllNotifications(true);
 	};
-	var action_save = function(event) {
-		internalSave(
-			capture(), null, filename + '.png', null,
-			'image/png', true, null, null, null, false
-		);
-		action_close();
+	var action_save = function() {
+		try {
+			var picker = Components.classes["@mozilla.org/filepicker;1"]
+				.createInstance(Components.interfaces.nsIFilePicker);
+			var io = Components.classes["@mozilla.org/network/io-service;1"]
+				.getService(Components.interfaces.nsIIOService);
+			
+			// Create a 'Save As' dialog:
+			picker.init(
+				window, label.notice + ' ' + filename,
+				Components.interfaces.nsIFilePicker.modeSave
+			);
+			picker.appendFilters(
+				Components.interfaces.nsIFilePicker.filterImages
+			);
+			picker.defaultExtension = '.png';
+			picker.defaultString = filename + '.png';
+			
+			// Show picker, cancel on user interaction:
+			if (picker.show() == Components.interfaces.nsIFilePicker.returnCancel) return;
+			
+			// Write the file to disk, without a Download dialog:
+			var source = io.newURI(capture(), 'utf8', null);
+			var persist = Components.classes["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"]
+				.createInstance(Components.interfaces.nsIWebBrowserPersist);
+			
+			persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
+			persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
+			
+			persist.saveURI(source, null, null, null, null, picker.file);
+			
+			// All done.
+			action_close();
+		}
+		
+		catch (error) {
+			alert(label.sizeerror);
+		}
 	};
 	var action_keydown = function(event) {
 		if (event.keyCode == 27) action_close();
@@ -781,23 +810,44 @@ var abduction = function(target, label) {
 				{
 					label:		label.autoselect,
 					callback:	function() {
-						notice_allow_close = false;
-						action_auto();
+						try {
+							action_auto();
+						}
+						
+						catch (error) {
+							alert(error);
+						}
+						
+						return true;
 					}
 				},
 				{
 					label:		label.selectall,
 					callback:	function() {
-						notice_allow_close = false;
-						action_maximize();
+						try {
+							action_maximize();
+						}
+						
+						catch (error) {
+							alert(error);
+						}
+						
+						return true;
 					}
 				},
 				{
 					label:		label.save,
 					accessKey:	label.accesskey,
 					callback:	function() {
-						notice_allow_close = false;
-						action_save();
+						try {
+							action_save();
+						}
+						
+						catch (error) {
+							alert(error);
+						}
+						
+						return true;
 					}
 				}
 			]
@@ -809,11 +859,7 @@ var abduction = function(target, label) {
 	var notice = append_notice();
 	var notice_allow_close = true;
 	
-	event_connect(notice, 'command', function() {
-		if (notice_allow_close) action_close();
-		
-		notice_allow_close = true;
-	});
+	event_connect(notice, 'command', action_close);
 	event_connect(widget.window, 'unload', action_close);
 	event_connect(widget.window, 'keydown', action_keydown);
 };
