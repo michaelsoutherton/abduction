@@ -4,7 +4,7 @@ function Abduction(target, language) {
 	this.window = this.document.defaultView;
 	
 	// Prepare the console:
-	this.console = new Console(this);
+	this.console = new Console();
 	this.console.enableMessages = true;
 	
 	// Prepare event handler:
@@ -36,7 +36,13 @@ function Abduction(target, language) {
 	// Begin moving selection:
 	this.events.bind(this.selection.element, 'mousedown', this.actionMove);
 	
-	this.console.message('Abduction: begins');
+	// Scroll automatically:
+	var scroll = new Scrollable(this.window);
+	
+	scroll.bind(this.selection.element);
+	scroll.bind(this.overlay.element);
+	
+	this.console.log('Abduction: begins');
 }
 Abduction.prototype = {
 	console: null,
@@ -105,9 +111,13 @@ Abduction.prototype = {
 		this.overlay.actionRemove();
 		this.selection.actionRemove();
 		
+		this.events.unbind(this.selection.element, 'mousedown', this.actionMove);
+		this.events.unbind(this.overlay.element, 'mousemove', this.actionScroll);
+		this.events.unbind(this.window, 'unload', this.actionRemove);
+		
 		this.document.documentElement.removeChild(this.styles);
 		
-		this.console.message('Abduction: ends');
+		this.console.log('Abduction: ends');
 	},
 	
 	actionSave: function() {
@@ -250,22 +260,20 @@ Abduction.prototype = {
 	}
 }
 
-function Console(parent) {
-	this.parent = parent;
+function Console() {
 	this.service = Components.classes["@mozilla.org/consoleservice;1"]
 		.getService(Components.interfaces.nsIConsoleService);
 }
 Console.prototype = {
 	enableErrors: true,
 	enableMessages: false,
-	parent: null,
 	service: null,
 	
 	error: function(message) {
 		if (this.enableErrors) Components.utils.reportError(message);
 	},
 	
-	message: function(message) {
+	log: function(message) {
 		if (this.enableMessages) this.service.logStringMessage(message);
 	}
 };
@@ -318,93 +326,12 @@ Events.prototype = {
 			if (type != item.type) return true;
 			if (callback != item.callback) return true;
 			
-			/*
-			alert(
-				'[ '
-				+ item.element.nodeName
-				+ '.'
-				+ type
-				+ ':'
-				+ item.type
-				+ ' ] '
-				+ item.callback.toString()
-			);
-			*/
-			
 			item.element.removeEventListener(item.type, item.handler, false);
 			
 			return false;
 		});
 	},
 };
-
-function Toolbar(parent) {
-	this.events = parent.events;
-	this.parent = parent;
-	this.notices = window.getNotificationBox(parent.window);
-	this.notice = this.notices.appendNotification(
-		parent.language.notice + ' ' + parent.getDocumentTitle(),
-		'abduction-controls', null,
-		this.notices.PRIORITY_INFO_HIGH,
-		[
-			{
-				label:		parent.language.autoselect,
-				callback:	function() {
-					try {
-						parent.actionXRay();
-					}
-					
-					catch (error) {
-						parent.console.error(error);
-					}
-					
-					return true;
-				}
-			},
-			{
-				label:		parent.language.selectall,
-				callback:	function() {
-					try {
-						//parent.actionSelectAll();
-					}
-					
-					catch (error) {
-						parent.console.error(error);
-					}
-					
-					return true;
-				}
-			},
-			{
-				label:		parent.language.save,
-				accessKey:	parent.language.accesskey,
-				callback:	function() {
-					try {
-						parent.actionSave();
-					}
-					
-					catch (error) {
-						parent.console.error(error);
-						//alert(error.name + ': ' + error);
-					}
-					
-					return true;
-				}
-			}
-		]
-	);
-	this.events.bind(this.notice, 'command', parent.actionRemove);
-}
-Toolbar.prototype = {
-	events: null,
-	notice: null,
-	parent: null,
-	
-	actionRemove: function() {
-		this.events.unbind(this.notice, 'command', parent.actionRemove);
-		this.notices.removeNotification(this.notice);
-	}
-}
 
 function Overlay(parent) {
 	this.events = parent.events;
@@ -423,6 +350,158 @@ Overlay.prototype = {
 		);
 	}
 }
+
+/**
+* Scrolls the document when the mouse is close to the edge.
+*/
+function Scrollable(window) {
+	this.console = new Console();
+	//this.console.enableMessages = true;
+	this.document = window.document;
+	this.events = new Events(this);
+	this.window = window;
+}
+Scrollable.prototype = {
+	console: null,
+	document: null,
+	events: null,
+	window: null,
+	
+	// Multiplies the speed every timeout:
+	scrollAcceleration: 1.02,
+	
+	// Distance from edge before scrolling:
+	scrollEdgeSpace: 50,
+	
+	// Maximum scroll size in pixels:
+	scrollMaxSpeed: 70,
+	
+	// Current scroll speeds:
+	scrollSpeedX: 0,
+	scrollSpeedY: 0,
+	
+	// How often scrolling should update:
+	scrollTimeoutRate: 20,
+	
+	bind: function(element) {
+		this.events.bind(element, 'mousemove', this.actionScroll);
+	},
+	
+	actionRemove: function(element) {
+		this.events.actionRemove();
+	},
+	
+	actionScroll: function(event) {
+		// Start scrolling left or right:
+		if (this.scrollSpeedX == 0) {
+			if (event.clientX > this.window.innerWidth - this.scrollEdgeSpace) {
+				this.scrollSpeedX = 3;
+			}
+			
+			if (event.clientX < this.scrollEdgeSpace) {
+				this.scrollSpeedX = -3;
+			}
+			
+			if (this.scrollSpeedX != 0) {
+				this.console.log('Abduction: scroll x begins');
+				
+				this.actionScrollX();
+			}
+		}
+		
+		else {
+			if (this.scrollSpeedX > 0 && event.clientX <= this.window.innerWidth - this.scrollEdgeSpace) {
+				this.scrollSpeedX = 0;
+			}
+			
+			if (this.scrollSpeedX < 0 && event.clientX >= this.scrollEdgeSpace) {
+				this.scrollSpeedX = 0;
+			}
+			
+			if (this.scrollSpeedX == 0) {
+				this.console.log('Abduction: scroll x ends');
+			}
+		}
+		
+		// Start scrolling down or up:
+		if (this.scrollSpeedY == 0) {
+			if (event.clientY > this.window.innerHeight - this.scrollEdgeSpace) {
+				this.scrollSpeedY = 3;
+			}
+			
+			if (event.clientY < this.scrollEdgeSpace) {
+				this.scrollSpeedY = -3;
+			}
+			
+			if (this.scrollSpeedY != 0) {
+				this.console.log('Abduction: scroll y begins');
+				
+				this.actionScrollY();
+			}
+		}
+		
+		else {
+			if (this.scrollSpeedY > 0 && event.clientY <= this.window.innerHeight - this.scrollEdgeSpace) {
+				this.scrollSpeedY = 0;
+			}
+			
+			if (this.scrollSpeedY < 0 && event.clientY >= this.scrollEdgeSpace) {
+				this.scrollSpeedY = 0;
+			}
+			
+			if (this.scrollSpeedY == 0) {
+				this.console.log('Abduction: scroll y ends');
+			}
+		}
+	},
+	
+	actionScrollX: function() {
+		if (this.scrollSpeedX == 0) return;
+		
+		this.console.log('Abduction: scroll x');
+		
+		this.document.documentElement.scrollLeft += this.scrollSpeedX;
+		
+		this.scrollSpeedX *= this.scrollAcceleration;
+		
+		if (this.scrollSpeedX > 0 && this.scrollSpeedX > this.scrollMaxSpeed) {
+			this.scrollSpeedX = this.scrollMaxSpeed;
+		}
+		
+		if (this.scrollSpeedX < 0 && this.scrollSpeedX < 0 - this.scrollMaxSpeed) {
+			this.scrollSpeedX = 0 - this.scrollMaxSpeed;
+		}
+		
+		if (this.scrollSpeedX != 0) setTimeout(
+			this.actionScrollX.bind(this),
+			this.scrollTimeoutRate
+		);
+	},
+	
+	actionScrollY: function() {
+		if (this.scrollSpeedY == 0) return;
+		
+		this.console.log('Abduction: scroll y');
+		
+		this.document.documentElement.scrollTop += this.scrollSpeedY;
+		
+		this.scrollSpeedY *= this.scrollAcceleration;
+		
+		if (this.scrollSpeedY > 0 && this.scrollSpeedY > this.scrollMaxSpeed) {
+			this.scrollSpeedY = this.scrollMaxSpeed;
+		}
+		
+		if (this.scrollSpeedY < 0 && this.scrollSpeedY < 0 - this.scrollMaxSpeed) {
+			this.scrollSpeedY = 0 - this.scrollMaxSpeed;
+		}
+		
+		if (this.scrollSpeedY != 0) setTimeout(
+			this.actionScrollY.bind(this),
+			this.scrollTimeoutRate
+		);
+	},
+}
+
 
 function Selection(parent) {
 	this.events = parent.events;
@@ -490,5 +569,73 @@ Selection.prototype = {
 		this.element.style.left = position.left + 'px';
 		this.element.style.top = position.top + 'px';
 		this.element.style.width = position.width + 'px';
+	}
+}
+
+function Toolbar(parent) {
+	this.events = parent.events;
+	this.parent = parent;
+	this.notices = window.getNotificationBox(parent.window);
+	this.notice = this.notices.appendNotification(
+		parent.language.notice + ' ' + parent.getDocumentTitle(),
+		'abduction-controls', null,
+		this.notices.PRIORITY_INFO_HIGH,
+		[
+			{
+				label:		parent.language.autoselect,
+				callback:	function() {
+					try {
+						parent.actionXRay();
+					}
+					
+					catch (error) {
+						parent.console.error(error);
+					}
+					
+					return true;
+				}
+			},
+			{
+				label:		parent.language.selectall,
+				callback:	function() {
+					try {
+						//parent.actionSelectAll();
+					}
+					
+					catch (error) {
+						parent.console.error(error);
+					}
+					
+					return true;
+				}
+			},
+			{
+				label:		parent.language.save,
+				accessKey:	parent.language.accesskey,
+				callback:	function() {
+					try {
+						parent.actionSave();
+					}
+					
+					catch (error) {
+						parent.console.error(error);
+						//alert(error.name + ': ' + error);
+					}
+					
+					return true;
+				}
+			}
+		]
+	);
+	this.events.bind(this.notice, 'command', parent.actionRemove);
+}
+Toolbar.prototype = {
+	events: null,
+	notice: null,
+	parent: null,
+	
+	actionRemove: function() {
+		this.events.unbind(this.notice, 'command', parent.actionRemove);
+		this.notices.removeNotification(this.notice);
 	}
 }
