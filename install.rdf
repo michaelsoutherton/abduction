@@ -25,6 +25,13 @@
 		</em:localized>
 		<em:localized>
 			<Description>
+				<em:locale>fr-FR</em:locale>
+				<em:name>Abduction!</em:name>
+				<em:description>Vous permet d'enregistrer l'image d'une page web. Sélectionnez la partie que vous voulez et enregistrez la.</em:description>
+			</Description>
+		</em:localized>
+		<em:localized>
+			<Description>
 				<em:locale>it-IT</em:locale>
 				<em:name>Abduction!</em:name>
 				<em:description>Permette di salvare come immagine una pagina web o una sua porzione.</em:description>
@@ -66,6 +73,7 @@
 		<em:translator>Stefano Tintorini</em:translator>
 		<em:translator>Tim Babych</em:translator>
 		<em:translator>Arkadiusz Dwojak</em:translator>
+		<em:translator>Michael Witrant</em:translator>
 		
 		<!-- Firefox -->
 		<em:targetApplication>

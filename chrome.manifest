@@ -3,6 +3,7 @@ resource abduction chrome/content/
 locale abduction de chrome/locale/de/
 locale abduction en-US chrome/locale/en-US/
 locale abduction en-AU chrome/locale/en-AU/
+locale abduction fr chrome/locale/fr/
 locale abduction it-IT chrome/locale/it-IT/
 locale abduction pl-PL chrome/locale/pl-PL/
 locale abduction ru chrome/locale/ru/

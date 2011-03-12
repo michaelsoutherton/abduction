@@ -1,0 +1,7 @@
+<!ENTITY abduction.notice		"Enregistrer l\'image de :">
+<!ENTITY abduction.save			"Enregistrer la sélection…">
+<!ENTITY abduction.selectall	"Enregistrer toute la page">
+<!ENTITY abduction.autoselect	"Rayon X">
+<!ENTITY abduction.accesskey	"S">
+<!ENTITY abduction.menu			"Enregistrer une image de la page…">
+<!ENTITY abduction.sizeerror	"L\'image est trop grande, Firefox ne peut pas l\'enregistrer.">
