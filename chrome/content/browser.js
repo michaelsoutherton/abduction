@@ -20,22 +20,7 @@ var abduction = function(target, label) {
 	};
 	
 	var get_position = function(element) {
-		var result = {
-			top:	element.offsetTop,
-			left:	element.offsetLeft,
-			width:	element.offsetWidth,
-			height:	element.offsetHeight
-		};
-		var parent = element.offsetParent;
-		
-		while (parent != null) {
-			result.left += parent.offsetLeft;
-			result.top += parent.offsetTop;
-			
-			parent = parent.offsetParent;
-		}
-		
-		return result;
+		return element.getBoundingClientRect();
 	};
 	
 	var scroll_to_y = function(min_y, max_y) {
