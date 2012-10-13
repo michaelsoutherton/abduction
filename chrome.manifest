@@ -9,3 +9,4 @@ locale abduction pl-PL chrome/locale/pl-PL/
 locale abduction ru chrome/locale/ru/
 locale abduction uk chrome/locale/uk/
 overlay chrome://browser/content/browser.xul chrome://abduction/content/browser.xul
+overlay chrome://navigator/content/navigator.xul chrome://abduction/content/browser.xul
