@@ -771,7 +771,7 @@ var abduction = function(target, label) {
 			persist.persistFlags = Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_REPLACE_EXISTING_FILES;
 			persist.persistFlags |= Components.interfaces.nsIWebBrowserPersist.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
 			
-			persist.saveURI(source, null, null, null, null, picker.file);
+			persist.saveURI(source, null, null, null, null, picker.file, null);
 			
 			// All done.
 			action_close();
